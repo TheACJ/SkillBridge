@@ -38,10 +38,19 @@ export function Navbar() {
 
           <div className="flex items-center gap-2">
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" data-testid="button-sign-in" className="hover-elevate active-elevate-2">
+              <Button 
+                variant="ghost" 
+                data-testid="button-sign-in" 
+                className="hover-elevate active-elevate-2"
+                onClick={() => window.location.href = '/api/login'}
+              >
                 Sign In
               </Button>
-              <Button data-testid="button-get-started-nav" className="hover-elevate active-elevate-2">
+              <Button 
+                data-testid="button-get-started-nav" 
+                className="hover-elevate active-elevate-2"
+                onClick={() => window.location.href = '/api/login'}
+              >
                 Get Started
               </Button>
             </div>
@@ -75,10 +84,19 @@ export function Navbar() {
               </a>
             ))}
             <div className="pt-3 space-y-2">
-              <Button variant="ghost" className="w-full hover-elevate active-elevate-2" data-testid="button-mobile-sign-in">
+              <Button 
+                variant="ghost" 
+                className="w-full hover-elevate active-elevate-2" 
+                data-testid="button-mobile-sign-in"
+                onClick={() => window.location.href = '/api/login'}
+              >
                 Sign In
               </Button>
-              <Button className="w-full hover-elevate active-elevate-2" data-testid="button-mobile-get-started">
+              <Button 
+                className="w-full hover-elevate active-elevate-2" 
+                data-testid="button-mobile-get-started"
+                onClick={() => window.location.href = '/api/login'}
+              >
                 Get Started
               </Button>
             </div>

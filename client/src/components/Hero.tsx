@@ -34,6 +34,7 @@ export function Hero() {
             size="lg" 
             className="bg-primary text-primary-foreground hover-elevate active-elevate-2 border border-primary-border px-8"
             data-testid="button-get-started"
+            onClick={() => window.location.href = '/api/login'}
           >
             Get Started Free
             <ArrowRight className="ml-2 h-5 w-5" />
@@ -43,6 +44,7 @@ export function Hero() {
             variant="outline"
             className="backdrop-blur-sm bg-white/10 text-white border-white/20 hover-elevate active-elevate-2 px-8"
             data-testid="button-explore-roadmaps"
+            onClick={() => window.location.href = '/api/login'}
           >
             Explore Roadmaps
           </Button>

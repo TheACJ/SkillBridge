@@ -165,6 +165,7 @@ export default function Dashboard() {
               variant="ghost" 
               className="w-full justify-start gap-2 hover-elevate active-elevate-2"
               data-testid="button-logout"
+              onClick={() => window.location.href = '/api/logout'}
             >
               <LogOut className="h-4 w-4" />
               Log Out

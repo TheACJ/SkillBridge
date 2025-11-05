@@ -20,11 +20,27 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
+from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Health checks and monitoring
+    path('api/v1/health/', views.health_check, name='health_check'),
+    path('api/v1/status/', views.api_status, name='api_status'),
+    path('api/v1/system-info/', views.system_info, name='system_info'),
+
+    # API documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Authentication
     path('api/v1/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+    # API endpoints
     path('api/v1/', include([
         path('users/', include('users.urls')),
         path('roadmaps/', include('roadmaps.urls')),

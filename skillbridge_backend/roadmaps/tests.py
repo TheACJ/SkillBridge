@@ -77,13 +77,18 @@ class RoadmapServiceTest(TestCase):
 
     def test_calculate_progress(self):
         """Test progress calculation"""
-        modules = [
-            {'completed': True, 'estimated_time': 10},
-            {'completed': False, 'estimated_time': 10},
-            {'completed': True, 'estimated_time': 10}
-        ]
+        roadmap = Roadmap.objects.create(
+            user=self.user,
+            domain='Python',
+            modules=[
+                {'completed': True, 'estimated_time': 10},
+                {'completed': False, 'estimated_time': 10},
+                {'completed': True, 'estimated_time': 10}
+            ],
+            progress=0.0
+        )
 
-        progress = RoadmapService.calculate_progress(modules)
+        progress = RoadmapService.calculate_progress(roadmap)
         self.assertEqual(progress, 66.67)  # 2 out of 3 completed
 
     def test_update_module_completion(self):
@@ -98,13 +103,17 @@ class RoadmapServiceTest(TestCase):
             progress=0.0
         )
 
-        updated_modules = RoadmapService.update_module_completion(roadmap.modules, 0, True)
-        self.assertTrue(updated_modules[0]['completed'])
-        self.assertFalse(updated_modules[1]['completed'])
+        result = RoadmapService.update_module_completion(roadmap, 0, True)
+        self.assertTrue(result)
+        roadmap.refresh_from_db()
+        self.assertTrue(roadmap.modules[0]['completed'])
+        self.assertFalse(roadmap.modules[1]['completed'])
 
 
 class RoadmapAPITest(APITestCase):
     def setUp(self):
+        # Clean up any existing roadmaps to ensure test isolation
+        Roadmap.objects.all().delete()
         self.user = User.objects.create_user(
             email='test@example.com',
             password='testpass123',

@@ -13,7 +13,8 @@ class RoadmapService:
 
     @staticmethod
     def generate_roadmap_ai(domain: str, skill_level: str = 'beginner',
-                           time_availability: str = 'part-time') -> Dict[str, Any]:
+                           time_availability: str = 'part-time',
+                           user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Generate a personalized roadmap using AI (OpenAI integration placeholder)
         In production, this would call OpenAI API

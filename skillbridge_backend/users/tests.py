@@ -116,8 +116,9 @@ class UserAPITest(APITestCase):
         }
         response = self.client.post('/api/v1/users/login/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        self.assertIn('tokens', response.data)
+        self.assertIn('access', response.data['tokens'])
+        self.assertIn('refresh', response.data['tokens'])
 
     def test_get_user_profile_authenticated(self):
         self.client.force_authenticate(user=self.user)

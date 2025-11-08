@@ -34,6 +34,7 @@ pub async fn match_mentors(req: web::Json<MatchingRequest>) -> Result<HttpRespon
 
     // Perform matching
     let matches = matcher.find_matches(&req.learner, &req.mentors, limit);
+    let matches_count = matches.len();
 
     let processing_time = start_time.elapsed().as_millis() as u64;
 
@@ -48,7 +49,7 @@ pub async fn match_mentors(req: web::Json<MatchingRequest>) -> Result<HttpRespon
         algorithm_version: matcher.algorithm_version.clone(),
     };
 
-    log::info!("Matching completed in {}ms, found {} matches", processing_time, matches.len());
+    log::info!("Matching completed in {}ms, found {} matches", processing_time, matches_count);
 
     Ok(HttpResponse::Ok().json(response))
 }

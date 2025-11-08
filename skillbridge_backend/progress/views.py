@@ -13,7 +13,7 @@ class ProgressLogListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return ProgressLog.objects.filter(user=self.request.user)
+        return ProgressLog.objects.filter(user=self.request.user).select_related('roadmap')
 
 
 @api_view(['POST'])
@@ -40,11 +40,11 @@ def get_roadmap_progress(request, roadmap_id):
     from django.shortcuts import get_object_or_404
 
     roadmap = get_object_or_404(Roadmap, id=roadmap_id, user=request.user)
-    progress_logs = ProgressLog.objects.filter(user=request.user, roadmap=roadmap)
+    progress_logs = ProgressLog.objects.filter(user=request.user, roadmap=roadmap).select_related('roadmap')
 
     # Calculate progress metrics
     total_commits = sum(log.details.get('commits', 0) for log in progress_logs if log.event_type == 'commit')
-    completed_modules = progress_logs.filter(event_type='module_complete').count()
+    completed_modules = progress_logs.filter(event_type='module_complete').only('id').count()
 
     return Response({
         'roadmap_id': roadmap_id,

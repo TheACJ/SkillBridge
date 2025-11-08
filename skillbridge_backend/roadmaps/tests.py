@@ -127,8 +127,8 @@ class RoadmapAPITest(APITestCase):
             'modules': [
                 {
                     'name': 'Introduction',
-                    'resources': ['https://example.com'],
-                    'estimated_time': 10,
+                    'resources': [{'title': 'Intro Resource', 'platform': 'Web', 'url': 'https://example.com'}],
+                    'estimated_hours': 10,
                     'completed': False
                 }
             ]
@@ -138,7 +138,10 @@ class RoadmapAPITest(APITestCase):
         self.assertEqual(response.data['domain'], 'Python')
 
     def test_list_user_roadmaps(self):
-        # Create a roadmap
+        # Ensure clean state - delete all roadmaps to avoid interference from other tests
+        Roadmap.objects.all().delete()
+
+        # Create a roadmap for this user
         Roadmap.objects.create(
             user=self.user,
             domain='Python',
@@ -151,6 +154,9 @@ class RoadmapAPITest(APITestCase):
         self.assertEqual(len(response.data), 1)
 
     def test_generate_roadmap_ai(self):
+        # Ensure clean state - delete all roadmaps to avoid domain uniqueness conflicts
+        Roadmap.objects.all().delete()
+        
         data = {
             'domain': 'JavaScript',
             'skill_level': 'beginner',

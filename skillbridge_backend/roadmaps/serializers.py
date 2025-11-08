@@ -7,7 +7,7 @@ class ModuleSerializer(serializers.Serializer):
     """Serializer for individual roadmap modules."""
     name = serializers.CharField(max_length=200)
     resources = serializers.ListField()
-    estimated_time = serializers.IntegerField(min_value=1, max_value=100)
+    estimated_hours = serializers.IntegerField(min_value=1, max_value=100)
     completed = serializers.BooleanField(default=False)
 
     def validate_resources(self, value):
@@ -128,6 +128,38 @@ class RoadmapCreateSerializer(serializers.ModelSerializer):
         validated_data['progress'] = progress
 
         return super().create(validated_data)
+
+    def validate_modules(self, value):
+        """Validate modules structure for creation."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Modules must be a list")
+
+        if len(value) == 0:
+            raise serializers.ValidationError("At least one module is required")
+
+        if len(value) > 20:
+            raise serializers.ValidationError("Maximum 20 modules allowed")
+
+        # Validate each module has required fields
+        for i, module in enumerate(value):
+            if not isinstance(module, dict):
+                raise serializers.ValidationError(f"Module {i} must be a dictionary")
+
+            # Check required fields - use 'name' instead of 'title' to match the structure
+            required_fields = ['name', 'resources', 'estimated_hours']
+            for field in required_fields:
+                if field not in module:
+                    raise serializers.ValidationError(f"Module {i} missing required field: {field}")
+
+            # Validate resources
+            if not isinstance(module.get('resources'), list) or len(module.get('resources', [])) == 0:
+                raise serializers.ValidationError(f"Module {i} must have at least one resource")
+
+            # Ensure completed field exists
+            if 'completed' not in module:
+                module['completed'] = False
+
+        return value
 
 
 class RoadmapProgressUpdateSerializer(serializers.ModelSerializer):

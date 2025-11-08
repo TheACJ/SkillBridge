@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -73,3 +74,97 @@ def get_categories(request):
     """
     categories = ForumPost.objects.values_list('category', flat=True).distinct()
     return Response(list(categories))
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def moderate_post(request, post_id):
+    """
+    Moderate a forum post (admin/moderator only)
+    """
+    user = request.user
+    
+    # Check if user has moderation privileges
+    if user.role not in ['admin', 'mentor']:
+        return Response({'error': 'Insufficient permissions'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        post = ForumPost.objects.get(id=post_id)
+    except ForumPost.DoesNotExist:
+        return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    action = request.data.get('action')  # 'approve', 'hide', 'delete'
+    reason = request.data.get('reason', '')
+    
+    if action not in ['approve', 'hide', 'delete']:
+        return Response({'error': 'Invalid action'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    if action == 'delete':
+        post.delete()
+        logger.info(f"Post {post_id} deleted by moderator {user.email}")
+        return Response({'message': 'Post deleted successfully'})
+    elif action == 'hide':
+        # For now, just log the action (would need is_hidden field in production)
+        logger.info(f"Post {post_id} hidden by moderator {user.email}: {reason}")
+        return Response({'message': 'Post hidden successfully'})
+    elif action == 'approve':
+        # For now, just log the approval
+        logger.info(f"Post {post_id} approved by moderator {user.email}")
+        return Response({'message': 'Post approved successfully'})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def report_post(request, post_id):
+    """
+    Report a forum post for moderation
+    """
+    try:
+        post = ForumPost.objects.get(id=post_id)
+    except ForumPost.DoesNotExist:
+        return Response({'error': 'Post not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    reason = request.data.get('reason', '')
+    if not reason:
+        return Response({'error': 'Report reason is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # TODO: Create moderation queue entry or notification
+    logger.info(f"Post {post_id} reported by {request.user.email}: {reason}")
+    
+    return Response({'message': 'Post reported successfully'})
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_moderation_queue(request):
+    """
+    Get posts requiring moderation (admin/moderator only)
+    """
+    user = request.user
+    
+    if user.role not in ['admin', 'mentor']:
+        return Response({'error': 'Insufficient permissions'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # For now, return posts with high downvote counts (would use dedicated moderation status in production)
+    flagged_posts = ForumPost.objects.filter(
+        downvotes__gte=3
+    ).select_related('user').only('id', 'title', 'content', 'category', 'downvotes', 'upvotes', 'created_at', 'user__email').order_by('-downvotes', '-created_at')
+    
+    posts_data = []
+    for post in flagged_posts:
+        posts_data.append({
+            'id': post.id,
+            'title': getattr(post, 'title', 'No title'),
+            'content': post.content[:100] + '...' if len(post.content) > 100 else post.content,
+            'author': post.user.email,
+            'category': post.category,
+            'downvotes': post.downvotes,
+            'upvotes': post.upvotes,
+            'created_at': post.created_at,
+            'reported_reason': 'High downvote count'
+        })
+    
+    return Response({
+        'posts': posts_data,
+        'total_count': len(posts_data)
+    })

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import ForumPost
 from users.serializers import UserSerializer
+from skillbridge_backend.security import security_utils
 
 
 class ForumPostSerializer(serializers.ModelSerializer):

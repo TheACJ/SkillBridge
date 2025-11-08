@@ -6,7 +6,7 @@ from .base import *
 
 # Development-specific settings
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'django']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'django', 'testserver']
 
 # Database - SQLite for development
 DATABASES = {
@@ -20,18 +20,23 @@ DATABASES = {
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Logging - more verbose in development
-LOGGING['handlers']['console']['level'] = 'DEBUG'
-LOGGING['loggers']['django']['level'] = 'DEBUG'
-LOGGING['loggers']['skillbridge_backend']['level'] = 'DEBUG'
+if 'LOGGING' in globals():
+    LOGGING['handlers']['console']['level'] = 'DEBUG'
+    LOGGING['loggers']['django']['level'] = 'DEBUG'
+    LOGGING['loggers']['skillbridge_backend']['level'] = 'DEBUG'
 
 # CORS - allow all in development
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Disable throttling in development for easier testing
-REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
-    'anon': '1000/hour',
-    'user': '10000/hour',
-}
+if 'REST_FRAMEWORK' in globals():
+    REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+        'anon': '1000/hour',
+        'user': '10000/hour',
+    }
+
+# Disable authentication in development for easier testing
+REST_FRAMEWORK['DEFAULT_PERMISSION_CLASSES'] = []
 
 # Add debug toolbar if installed
 if DEBUG:

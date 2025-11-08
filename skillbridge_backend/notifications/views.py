@@ -11,7 +11,7 @@ class NotificationListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Notification.objects.filter(user=self.request.user)
+        return Notification.objects.filter(user=self.request.user).select_related()
 
 
 @api_view(['PATCH'])
@@ -33,5 +33,5 @@ def get_unread_count(request):
     """
     Get count of unread notifications
     """
-    count = Notification.objects.filter(user=request.user, read=False).count()
+    count = Notification.objects.filter(user=request.user, read=False).only('id').count()
     return Response({'unread_count': count})

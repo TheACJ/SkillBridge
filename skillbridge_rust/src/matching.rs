@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::time::{Instant, Duration};
 
 pub struct MentorMatcher {
-    algorithm_version: String,
+    pub algorithm_version: String,
 }
 
 impl MentorMatcher {
@@ -116,8 +116,8 @@ impl MentorMatcher {
         let regions = [
             ("africa", ["nigeria", "kenya", "south africa", "ghana", "uganda"]),
             ("europe", ["uk", "germany", "france", "spain", "italy"]),
-            ("asia", ["india", "china", "japan", "singapore"]),
-            ("americas", ["usa", "canada", "brazil", "mexico"]),
+            ("asia", ["india", "china", "japan", "singapore", "korea"]),
+            ("americas", ["usa", "canada", "brazil", "mexico", "argentina"]),
         ];
 
         for (_, countries) in regions.iter() {

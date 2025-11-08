@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import User
+from skillbridge_backend.security import security_utils
 
 
 class UserSerializer(serializers.ModelSerializer):

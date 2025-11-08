@@ -1,231 +1,168 @@
-import os
-import json
 import logging
-from typing import Dict, List, Any, Optional
+from django.core.cache import cache
 from django.conf import settings
-from .models import Roadmap
-from users.models import User
+from .integrations import OpenAIIntegration
 
 logger = logging.getLogger(__name__)
 
+
 class RoadmapService:
-    """Service class for roadmap-related business logic"""
+    """Service class for roadmap-related business logic with caching"""
 
     @staticmethod
-    def generate_roadmap_ai(domain: str, skill_level: str = 'beginner',
-                           time_availability: str = 'part-time',
-                           user_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def generate_roadmap(domain, skill_level='beginner', time_availability='part-time', user_context=None):
         """
-        Generate a personalized roadmap using AI (OpenAI integration placeholder)
-        In production, this would call OpenAI API
+        Generate a personalized roadmap using OpenAI with caching
         """
+        return RoadmapService.generate_roadmap_ai(domain, skill_level, time_availability, user_context)
+
+    @staticmethod
+    def generate_roadmap_ai(domain, skill_level='beginner', time_availability='part-time', user_context=None):
+        """
+        Generate a personalized roadmap using OpenAI with caching
+        """
+        # Create cache key based on parameters
+        cache_key = f"roadmap_{domain}_{skill_level}_{time_availability}_{hash(str(user_context))}"
+        cached_roadmap = cache.get(cache_key)
+
+        if cached_roadmap:
+            logger.info(f"Returning cached roadmap for {domain}")
+            return cached_roadmap
+
         try:
-            # Mock AI response - replace with actual OpenAI integration
-            base_modules = {
-                'beginner': [
-                    {
-                        'name': f'Introduction to {domain}',
-                        'resources': [
-                            f'https://freecodecamp.org/learn/{domain.lower().replace(" ", "-")}',
-                            f'https://developer.mozilla.org/en-US/docs/Learn/{domain.replace(" ", "_")}'
-                        ],
-                        'estimated_time': 20,
-                        'completed': False
-                    },
-                    {
-                        'name': f'Basic {domain} Concepts',
-                        'resources': [
-                            f'https://www.youtube.com/results?search_query={domain.lower()}+tutorial',
-                            f'https://github.com/topics/{domain.lower().replace(" ", "")}'
-                        ],
-                        'estimated_time': 30,
-                        'completed': False
-                    },
-                    {
-                        'name': f'Building Your First {domain} Project',
-                        'resources': [
-                            'https://roadmap.sh/guides',
-                            'https://github.com/practical-projects'
-                        ],
-                        'estimated_time': 40,
-                        'completed': False
-                    }
-                ],
-                'intermediate': [
-                    {
-                        'name': f'Advanced {domain} Patterns',
-                        'resources': [
-                            f'https://dev.to/t/{domain.lower()}',
-                            f'https://stackoverflow.com/questions/tagged/{domain.lower().replace(" ", "-")}'
-                        ],
-                        'estimated_time': 50,
-                        'completed': False
-                    },
-                    {
-                        'name': f'{domain} Best Practices',
-                        'resources': [
-                            'https://refactoring.guru',
-                            'https://martinfowler.com'
-                        ],
-                        'estimated_time': 35,
-                        'completed': False
-                    }
-                ],
-                'advanced': [
-                    {
-                        'name': f'Expert {domain} Techniques',
-                        'resources': [
-                            f'https://arxiv.org/search/?query={domain.lower()}',
-                            'https://research.google/pubs/'
-                        ],
-                        'estimated_time': 60,
-                        'completed': False
-                    }
-                ]
-            }
+            openai_integration = OpenAIIntegration()
+            roadmap_data = openai_integration.generate_roadmap(
+                domain=domain,
+                skill_level=skill_level,
+                time_availability=time_availability,
+                user_context=user_context
+            )
 
-            modules = []
-            if skill_level == 'beginner':
-                modules.extend(base_modules['beginner'])
-                if time_availability == 'full-time':
-                    modules.extend(base_modules['intermediate'][:1])
-            elif skill_level == 'intermediate':
-                modules.extend(base_modules['intermediate'])
-                modules.extend(base_modules['beginner'][-1:])  # Add project building
-            else:  # advanced
-                modules.extend(base_modules['advanced'])
-                modules.extend(base_modules['intermediate'])
+            # Cache the result for 1 hour
+            cache.set(cache_key, roadmap_data, 3600)
+            logger.info(f"Generated and cached new roadmap for {domain}")
 
-            return {
-                'domain': domain,
-                'modules': modules,
-                'progress': 0,
-                'skill_level': skill_level,
-                'estimated_completion_weeks': len(modules) * 2
-            }
+            return roadmap_data
 
         except Exception as e:
             logger.error(f"Error generating roadmap: {str(e)}")
             raise Exception("Failed to generate roadmap")
 
     @staticmethod
-    def calculate_progress(roadmap: Roadmap) -> float:
+    def calculate_progress(roadmap):
         """
-        Calculate roadmap progress based on completed modules
+        Calculate progress for a roadmap with caching
         """
+        cache_key = f"roadmap_progress_{roadmap.id}"
+        cached_progress = cache.get(cache_key)
+
+        if cached_progress is not None:
+            return cached_progress
+
         try:
-            total_modules = len(roadmap.modules)
-            if total_modules == 0:
-                return 0.0
+            modules = roadmap.modules or []
+            if not modules:
+                progress = 0.0
+            else:
+                completed_modules = sum(1 for module in modules if module.get('completed', False))
+                progress = round((completed_modules / len(modules)) * 100, 2)
 
-            completed_modules = sum(1 for module in roadmap.modules if module.get('completed', False))
-            progress = (completed_modules / total_modules) * 100
-
-            return round(progress, 2)
+            # Cache for 5 minutes
+            cache.set(cache_key, progress, 300)
+            return progress
 
         except Exception as e:
-            logger.error(f"Error calculating progress: {str(e)}")
+            logger.error(f"Error calculating progress for roadmap {roadmap.id}: {str(e)}")
             return 0.0
 
     @staticmethod
-    def update_module_completion(roadmap: Roadmap, module_index: int, completed: bool) -> bool:
+    def update_module_completion(roadmap, module_id, completed):
         """
-        Update completion status of a specific module
+        Update module completion status with cache invalidation
         """
         try:
-            if 0 <= module_index < len(roadmap.modules):
-                roadmap.modules[module_index]['completed'] = completed
-                roadmap.progress = RoadmapService.calculate_progress(roadmap)
-                roadmap.save()
-                return True
-            return False
+            modules = roadmap.modules or []
+            for i, module in enumerate(modules):
+                if str(i) == str(module_id) or module.get('name') == str(module_id):
+                    module['completed'] = completed
+                    break
+
+            roadmap.modules = modules
+            roadmap.save()
+
+            # Invalidate progress cache
+            cache_key = f"roadmap_progress_{roadmap.id}"
+            cache.delete(cache_key)
+
+            logger.info(f"Updated module {module_id} completion for roadmap {roadmap.id}")
+            return True
 
         except Exception as e:
             logger.error(f"Error updating module completion: {str(e)}")
             return False
 
     @staticmethod
-    def get_recommended_resources(domain: str, skill_level: str) -> List[Dict[str, Any]]:
+    def get_recommended_resources(domain, skill_level='beginner'):
         """
-        Get recommended resources for a domain and skill level
+        Get recommended resources for a domain with caching
         """
-        try:
-            # Mock resource recommendations - in production, this could be from a database
-            resources = {
-                'python': {
-                    'beginner': [
-                        {
-                            'title': 'Python for Everybody',
-                            'platform': 'Coursera',
-                            'url': 'https://www.coursera.org/specializations/python',
-                            'difficulty': 'Beginner',
-                            'duration': '8 weeks'
-                        },
-                        {
-                            'title': 'Automate the Boring Stuff with Python',
-                            'platform': 'Free',
-                            'url': 'https://automatetheboringstuff.com',
-                            'difficulty': 'Beginner',
-                            'duration': 'Self-paced'
-                        }
-                    ],
-                    'intermediate': [
-                        {
-                            'title': 'Python Data Structures and Algorithms',
-                            'platform': 'Udemy',
-                            'url': 'https://www.udemy.com/course/python-data-structures-and-algorithms',
-                            'difficulty': 'Intermediate',
-                            'duration': '20 hours'
-                        }
-                    ]
-                },
-                'web-development': {
-                    'beginner': [
-                        {
-                            'title': 'HTML & CSS Full Course',
-                            'platform': 'freeCodeCamp',
-                            'url': 'https://www.freecodecamp.org/learn/responsive-web-design/',
-                            'difficulty': 'Beginner',
-                            'duration': '300 hours'
-                        }
-                    ]
-                }
+        cache_key = f"resources_{domain}_{skill_level}"
+        cached_resources = cache.get(cache_key)
+
+        if cached_resources:
+            return cached_resources
+
+        # Mock resource recommendations (would integrate with external APIs)
+        resources = [
+            {
+                'title': f'Official {domain} Documentation',
+                'type': 'documentation',
+                'platform': 'Official',
+                'url': f'https://{domain.lower()}.org/docs',
+                'free': True,
+                'estimated_time': 'Ongoing'
+            },
+            {
+                'title': f'{domain} for {skill_level.title()}s',
+                'type': 'course',
+                'platform': 'Coursera',
+                'url': f'https://coursera.org/{domain.lower()}',
+                'free': False,
+                'estimated_time': '8 weeks'
             }
+        ]
 
-            domain_key = domain.lower().replace(' ', '-')
-            return resources.get(domain_key, {}).get(skill_level, [])
-
-        except Exception as e:
-            logger.error(f"Error getting recommended resources: {str(e)}")
-            return []
+        # Cache for 24 hours
+        cache.set(cache_key, resources, 86400)
+        return resources
 
     @staticmethod
-    def validate_roadmap_data(data: Dict[str, Any]) -> Dict[str, Any]:
+    def invalidate_user_cache(user_id):
         """
-        Validate roadmap data structure
+        Invalidate all caches related to a user
         """
-        errors = {}
+        cache_keys = [
+            f"user_roadmaps_{user_id}",
+            f"user_stats_{user_id}",
+            f"user_matches_{user_id}"
+        ]
 
-        if 'domain' not in data or not data['domain'].strip():
-            errors['domain'] = 'Domain is required'
+        for key in cache_keys:
+            cache.delete(key)
 
-        if 'modules' not in data or not isinstance(data['modules'], list):
-            errors['modules'] = 'Modules must be a list'
-        else:
-            for i, module in enumerate(data['modules']):
-                if not isinstance(module, dict):
-                    errors[f'modules[{i}]'] = 'Each module must be a dictionary'
-                    continue
+        logger.info(f"Invalidated cache for user {user_id}")
 
-                required_fields = ['name', 'resources', 'estimated_time']
-                for field in required_fields:
-                    if field not in module:
-                        errors[f'modules[{i}].{field}'] = f'{field} is required'
+    @staticmethod
+    def invalidate_roadmap_cache(roadmap_id):
+        """
+        Invalidate all caches related to a roadmap
+        """
+        cache_keys = [
+            f"roadmap_progress_{roadmap_id}",
+            f"roadmap_analytics_{roadmap_id}"
+        ]
 
-                if 'estimated_time' in module and not isinstance(module['estimated_time'], (int, float)):
-                    errors[f'modules[{i}].estimated_time'] = 'estimated_time must be a number'
+        for key in cache_keys:
+            cache.delete(key)
 
-        if errors:
-            raise ValueError(f"Validation errors: {errors}")
-
-        return data
+        logger.info(f"Invalidated cache for roadmap {roadmap_id}")

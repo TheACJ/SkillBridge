@@ -1,8 +1,3 @@
-"""
-Base Django settings for skillbridge_backend project.
-This file contains all the settings that are common to all environments.
-"""
-
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -10,35 +5,17 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dev-key-change-in-production')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
-
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
-
-# Security settings
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# SSL/HTTPS settings (only in production)
-if not DEBUG:
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# CORS settings
-CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
-CORS_ALLOW_CREDENTIALS = True
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 # Application definition
 INSTALLED_APPS = [
@@ -62,6 +39,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'skillbridge_backend.middleware.SecurityMiddleware',
+    'skillbridge_backend.middleware.RateLimitMiddleware',
+    'skillbridge_backend.middleware.AuditMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -91,6 +71,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'skillbridge_backend.wsgi.application'
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-mv#ur8!!0vc-b!rpaut(n6m0!gbwx(28891ar0!z++=k9pdab8')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -293,18 +279,28 @@ GITHUB_WEBHOOK_SECRET = os.getenv('GITHUB_WEBHOOK_SECRET')
 GITHUB_APP_ID = os.getenv('GITHUB_APP_ID')
 GITHUB_PRIVATE_KEY = os.getenv('GITHUB_PRIVATE_KEY')
 
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
+# Security settings
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
-# Spectacular settings for API documentation
-SPECTACULAR_SETTINGS = {
-    'TITLE': 'SkillBridge API',
-    'DESCRIPTION': 'AI-powered platform for matching learners with personalized skill roadmaps',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
+# Content Security Policy
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+
+# Celery Beat Schedule
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'cleanup-expired-cache': {
+        'task': 'roadmaps.tasks.cleanup_expired_cache',
+        'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
+    },
+    'send-weekly-progress-reports': {
+        'task': 'roadmaps.tasks.send_weekly_progress_report',
+        'schedule': crontab(day_of_week=1, hour=9, minute=0),  # Monday 9 AM
+    },
+    'optimize-database-indexes': {
+        'task': 'roadmaps.tasks.optimize_database_indexes',
+        'schedule': crontab(day_of_week=0, hour=3, minute=0),  # Sunday 3 AM
+    },
 }

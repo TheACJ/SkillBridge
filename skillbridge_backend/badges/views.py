@@ -12,7 +12,7 @@ class BadgeListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == 'mentor':
-            return Badge.objects.filter(mentor=user)
+            return Badge.objects.filter(mentor=user).select_related()
         return Badge.objects.none()  # Learners don't have badges to award
 
 

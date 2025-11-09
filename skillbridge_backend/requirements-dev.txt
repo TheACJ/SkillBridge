@@ -1,0 +1,42 @@
+# Development and Testing Dependencies
+-r requirements.txt
+
+# Testing
+pytest==7.4.0
+pytest-django==4.5.2
+pytest-cov==4.1.0
+pytest-xdist==3.3.1
+factory-boy==3.2.1
+faker==19.3.0
+
+# Code Quality
+black==23.7.0
+isort==5.12.0
+flake8==6.0.0
+mypy==1.5.1
+pre-commit==3.4.0
+
+# Security
+safety==2.3.5
+bandit==1.7.5
+
+# Performance Testing
+locust==2.15.1
+
+# Documentation
+sphinx==7.1.2
+sphinx-rtd-theme==1.2.2
+
+# Development Tools
+django-debug-toolbar==4.1.0
+django-extensions==3.2.3
+werkzeug==2.3.7
+
+# API Testing
+drf-yasg==1.21.7  # For OpenAPI documentation during development
+
+# Database
+psycopg2-binary==2.9.7
+
+# Environment
+python-dotenv==1.0.0

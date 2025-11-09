@@ -11,6 +11,7 @@ interface RoadmapCardProps {
   completedModules: number;
   estimatedTime: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
+  onProgress?: () => void;
 }
 
 export function RoadmapCard({
@@ -46,7 +47,16 @@ export function RoadmapCard({
             <span className="text-muted-foreground">Progress</span>
             <span className="font-medium">{progress}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          {onProgress ? (
+            <div className="flex items-center gap-2 cursor-pointer" onClick={onProgress}>
+              <Progress value={progress} className="h-2 flex-1" />
+              <Button variant="outline" size="icon" className="h-6 w-6">
+                <CheckCircle className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <Progress value={progress} className="h-2" />
+          )}
         </div>
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

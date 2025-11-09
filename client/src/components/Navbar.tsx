@@ -42,14 +42,14 @@ export function Navbar() {
                 variant="ghost" 
                 data-testid="button-sign-in" 
                 className="hover-elevate active-elevate-2"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.location.href = '/signin'}
               >
                 Sign In
               </Button>
               <Button 
                 data-testid="button-get-started-nav" 
                 className="hover-elevate active-elevate-2"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.location.href = '/signin'}
               >
                 Get Started
               </Button>
@@ -88,14 +88,14 @@ export function Navbar() {
                 variant="ghost" 
                 className="w-full hover-elevate active-elevate-2" 
                 data-testid="button-mobile-sign-in"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.location.href = '/signin'}
               >
                 Sign In
               </Button>
               <Button 
                 className="w-full hover-elevate active-elevate-2" 
                 data-testid="button-mobile-get-started"
-                onClick={() => window.location.href = '/api/login'}
+                onClick={() => window.location.href = '/signin'}
               >
                 Get Started
               </Button>

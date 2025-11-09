@@ -1,8 +1,29 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import heroImage from "@assets/generated_images/Hero_section_collaboration_image_b6d8e5f4.png";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+interface Stats {
+  activeLearners: number;
+  expertMentors: number;
+  learningPaths: number;
+}
 
 export function Hero() {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const { data: stats } = useQuery<Stats>({
+    queryKey: ['stats'],
+    queryFn: () => ({
+      activeLearners: 10324,
+      expertMentors: 542,
+      learningPaths: 68,
+    }),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div 
@@ -34,9 +55,9 @@ export function Hero() {
             size="lg" 
             className="bg-primary text-primary-foreground hover-elevate active-elevate-2 border border-primary-border px-8"
             data-testid="button-get-started"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => navigate(user ? '/dashboard' : '/signup')}
           >
-            Get Started Free
+            {user ? 'Go to Dashboard' : 'Get Started Free'}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           <Button 
@@ -44,23 +65,29 @@ export function Hero() {
             variant="outline"
             className="backdrop-blur-sm bg-white/10 text-white border-white/20 hover-elevate active-elevate-2 px-8"
             data-testid="button-explore-roadmaps"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => navigate(user ? '/roadmaps' : '/signup')}
           >
-            Explore Roadmaps
+            {user ? 'Your Roadmaps' : 'Explore Roadmaps'}
           </Button>
         </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
           <div className="backdrop-blur-sm bg-white/10 rounded-lg p-4 border border-white/20">
-            <div className="text-3xl font-bold text-white mb-1">10K+</div>
+            <div className="text-3xl font-bold text-white mb-1">
+              {stats ? `${Math.floor(stats.activeLearners / 1000)}K+` : '10K+'}
+            </div>
             <div className="text-sm text-gray-200">Active Learners</div>
           </div>
           <div className="backdrop-blur-sm bg-white/10 rounded-lg p-4 border border-white/20">
-            <div className="text-3xl font-bold text-white mb-1">500+</div>
+            <div className="text-3xl font-bold text-white mb-1">
+              {stats ? `${stats.expertMentors}+` : '500+'}
+            </div>
             <div className="text-sm text-gray-200">Expert Mentors</div>
           </div>
           <div className="backdrop-blur-sm bg-white/10 rounded-lg p-4 border border-white/20">
-            <div className="text-3xl font-bold text-white mb-1">50+</div>
+            <div className="text-3xl font-bold text-white mb-1">
+              {stats ? `${stats.learningPaths}+` : '50+'}
+            </div>
             <div className="text-sm text-gray-200">Learning Paths</div>
           </div>
         </div>

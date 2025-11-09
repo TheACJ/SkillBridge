@@ -9,6 +9,9 @@ import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
 import Community from "@/pages/Community";
 import NotFound from "@/pages/not-found";
+import Signin from "@/pages/Signin";
+import Signup from "@/pages/Signup";
+import ForgotPassword from "@/pages/ForgotPassword";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -24,7 +27,12 @@ function Router() {
   return (
     <Switch>
       {!isAuthenticated ? (
-        <Route path="/" component={Landing} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/signin" component={Signin} />
+          <Route path="/signup" component={Signup} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+        </>
       ) : (
         <>
           <Route path="/" component={Dashboard} />

@@ -1,0 +1,98 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - staging
+        - production
+      target_version:
+        description: 'Version to rollback to (leave empty for previous stable version)'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Determine rollback version
+      run: |
+        if [ -n "${{ inputs.target_version }}" ]; then
+          echo "ROLLBACK_VERSION=${{ inputs.target_version }}" >> $GITHUB_ENV
+        else
+          # Find previous stable version from git tags
+          PREVIOUS_VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "main")
+          echo "ROLLBACK_VERSION=$PREVIOUS_VERSION" >> $GITHUB_ENV
+        fi
+
+    - name: Log rollback information
+      run: |
+        echo "Rolling back ${{ inputs.environment }} to version ${{ env.ROLLBACK_VERSION }}"
+
+    - name: Pull rollback images
+      run: |
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.ROLLBACK_VERSION }}-django
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.ROLLBACK_VERSION }}-rust
+
+    - name: Tag rollback images
+      run: |
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.ROLLBACK_VERSION }}-django skillbridge-django:rollback
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.ROLLBACK_VERSION }}-rust skillbridge-rust:rollback
+
+    - name: Stop current deployment
+      run: |
+        if [ "${{ inputs.environment }}" == "production" ]; then
+          docker-compose -f docker-compose.prod.yml down
+        else
+          docker-compose down
+        fi
+
+    - name: Deploy rollback version
+      run: |
+        # Update environment to use rollback images
+        export DJANGO_IMAGE=skillbridge-django:rollback
+        export RUST_IMAGE=skillbridge-rust:rollback
+
+        if [ "${{ inputs.environment }}" == "production" ]; then
+          docker-compose -f docker-compose.prod.yml up -d --scale django=3
+        else
+          docker-compose up -d
+        fi
+
+    - name: Verify rollback deployment
+      run: |
+        echo "Verifying rollback deployment..."
+        sleep 30
+
+        # Health checks
+        curl -f http://localhost:8000/api/v1/health/ || exit 1
+        curl -f http://localhost:8001/health || exit 1
+
+        echo "Rollback to version ${{ env.ROLLBACK_VERSION }} completed successfully"
+
+    - name: Notify rollback completion
+      if: success
+      run: |
+        echo "Rollback to ${{ inputs.environment }} completed successfully"
+        # Add notification logic here
+
+    - name: Notify rollback failure
+      if: failure
+      run: |
+        echo "Rollback to ${{ inputs.environment }} failed"
+        # Add failure notification logic here
+        # Consider triggering emergency procedures

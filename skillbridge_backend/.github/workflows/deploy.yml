@@ -1,0 +1,89 @@
+name: Deploy to Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      version:
+        description: 'Version/tag to deploy'
+        required: false
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set deployment version
+      run: |
+        if [ -n "${{ inputs.version }}" ]; then
+          echo "DEPLOY_VERSION=${{ inputs.version }}" >> $GITHUB_ENV
+        else
+          echo "DEPLOY_VERSION=${{ github.sha }}" >> $GITHUB_ENV
+        fi
+
+    - name: Deploy to ${{ inputs.environment }}
+      run: |
+        echo "Deploying version ${{ env.DEPLOY_VERSION }} to ${{ inputs.environment }}"
+
+        # Pull latest images
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_VERSION }}-django
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_VERSION }}-rust
+
+        # Tag images for environment
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_VERSION }}-django skillbridge-django:${{ inputs.environment }}
+        docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEPLOY_VERSION }}-rust skillbridge-rust:${{ inputs.environment }}
+
+        # Deploy based on environment
+        if [ "${{ inputs.environment }}" == "production" ]; then
+          # Production deployment with docker-compose
+          docker-compose -f docker-compose.prod.yml up -d --scale django=3
+        else
+          # Staging deployment
+          docker-compose up -d
+        fi
+
+    - name: Run post-deployment tests
+      run: |
+        echo "Running post-deployment health checks"
+        # Wait for services to be ready
+        sleep 30
+
+        # Check Django health
+        curl -f http://localhost:8000/api/v1/health/ || exit 1
+
+        # Check Rust service health
+        curl -f http://localhost:8001/health || exit 1
+
+        # Run smoke tests
+        python manage.py check --deploy
+
+    - name: Notify deployment success
+      if: success
+      run: |
+        echo "Deployment to ${{ inputs.environment }} successful"
+        # Add notification logic here (Slack, Discord, etc.)
+
+    - name: Notify deployment failure
+      if: failure
+      run: |
+        echo "Deployment to ${{ inputs.environment }} failed"
+        # Add failure notification logic here

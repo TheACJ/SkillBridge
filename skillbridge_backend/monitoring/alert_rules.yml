@@ -1,0 +1,126 @@
+groups:
+  - name: skillbridge_alerts
+    rules:
+      # Django Application Alerts
+      - alert: DjangoHighResponseTime
+        expr: histogram_quantile(0.95, rate(django_http_requests_total_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Django response time (95th percentile > 5s)"
+          description: "Django response time is {{ $value }}s for 95th percentile"
+
+      - alert: DjangoHighErrorRate
+        expr: rate(django_http_responses_total{status=~"5.."}[5m]) / rate(django_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Django error rate (>5%)"
+          description: "Django error rate is {{ $value | humanizePercentage }}"
+
+      - alert: DjangoDown
+        expr: up{job="django"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Django application is down"
+          description: "Django has been down for more than 1 minute"
+
+      # Database Alerts
+      - alert: DatabaseHighConnectionCount
+        expr: pg_stat_activity_count > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connection count"
+          description: "Database has {{ $value }} active connections"
+
+      - alert: DatabaseDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been down for more than 1 minute"
+
+      # Redis Alerts
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis high memory usage (>90%)"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been down for more than 1 minute"
+
+      # System Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage (>85%)"
+          description: "CPU usage is {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage (>90%)"
+          description: "Memory usage is {{ $value }}%"
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space (<10% available)"
+          description: "Disk space available is {{ $value }}%"
+
+      # Celery Alerts
+      - alert: CeleryHighTaskFailureRate
+        expr: rate(celery_task_failed_total[5m]) / rate(celery_task_sent_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Celery task failure rate (>10%)"
+          description: "Celery task failure rate is {{ $value | humanizePercentage }}"
+
+      # Rust Service Alerts
+      - alert: RustServiceDown
+        expr: up{job="rust-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Rust matching service is down"
+          description: "Rust service has been down for more than 1 minute"
+
+      # Nginx Alerts
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Nginx error rate (>5%)"
+          description: "Nginx error rate is {{ $value | humanizePercentage }}"

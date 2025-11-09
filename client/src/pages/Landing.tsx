@@ -1,14 +1,27 @@
-import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Features } from "@/components/Features";
 import { HowItWorks } from "@/components/HowItWorks";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MentorCard } from "@/components/MentorCard";
-import { Quote } from "lucide-react";
+import { Quote, Check, AlertCircle } from "lucide-react";
+import { RootLayout } from "@/components/RootLayout";
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export default function Landing() {
+  const [, navigate] = useLocation();
+  const { user } = useAuth();
+  const { data: health } = useQuery({
+    queryKey: ['health'],
+    queryFn: () => apiClient.healthCheck(),
+    retry: false,
+    refetchOnWindowFocus: true,
+  });
+
   const testimonials = [
     {
       name: "Aisha Okafor",
@@ -55,8 +68,27 @@ export default function Landing() {
   ];
 
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <RootLayout withPadding={false}>
+      {health && health.status !== 'healthy' && (
+        <Alert variant="destructive" className="mx-4 lg:mx-8 mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Service Status</AlertTitle>
+          <AlertDescription>
+            We're experiencing some issues with our services. Our team is working on it.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {health?.status === 'healthy' && (
+        <Alert className="mx-4 lg:mx-8 mt-4">
+          <Check className="h-4 w-4" />
+          <AlertTitle>All Systems Operational</AlertTitle>
+          <AlertDescription>
+            Services are running smoothly. API v{health.version}
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Hero />
       
       <div id="features">
@@ -85,8 +117,14 @@ export default function Landing() {
           </div>
 
           <div className="text-center">
-            <Button size="lg" variant="outline" className="hover-elevate active-elevate-2" data-testid="button-view-all-mentors">
-              View All Mentors
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="hover-elevate active-elevate-2" 
+              data-testid="button-view-all-mentors"
+              onClick={() => navigate(user ? '/mentors' : '/signup')}
+            >
+              {user ? 'View All Mentors' : 'Sign Up to Connect with Mentors'}
             </Button>
           </div>
         </div>
@@ -128,14 +166,26 @@ export default function Landing() {
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Connect with thousands of learners, share knowledge, and grow together
             </p>
-            <Button size="lg" className="hover-elevate active-elevate-2" data-testid="button-join-community">
-              Join SkillBridge Today
+            <Button 
+              size="lg" 
+              className="hover-elevate active-elevate-2" 
+              data-testid="button-join-community"
+              onClick={() => navigate(user ? '/dashboard' : '/signup')}
+            >
+              {user ? 'Go to Dashboard' : 'Join SkillBridge Today'}
             </Button>
+            {!user && (
+              <div className="mt-4 text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Button variant="ghost" className="p-0 h-auto" onClick={() => navigate('/signin')}>
+                  Sign in
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      <Footer />
-    </div>
+    </RootLayout>
   );
 }

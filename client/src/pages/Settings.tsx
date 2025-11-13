@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
 } from "lucide-react";
 
 export default function Settings() {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -195,19 +197,19 @@ export default function Settings() {
         <div className="max-w-4xl mx-auto space-y-8">
           {/* Header */}
           <div>
-            <h1 className="text-3xl font-bold mb-2">Settings</h1>
+            <h1 className="text-3xl font-bold mb-2">{t('settings.profile')}</h1>
             <p className="text-muted-foreground">
-              Manage your account preferences and privacy settings
+              {t('settings.profile')} {t('common.save').toLowerCase()}
             </p>
           </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="privacy">Privacy</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
+              <TabsTrigger value="profile">{t('settings.profile')}</TabsTrigger>
+              <TabsTrigger value="security">{t('settings.security')}</TabsTrigger>
+              <TabsTrigger value="notifications">{t('settings.notifications')}</TabsTrigger>
+              <TabsTrigger value="privacy">{t('settings.privacy')}</TabsTrigger>
+              <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
             </TabsList>
 
             {/* Profile Settings */}
@@ -643,8 +645,8 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>Language</Label>
-                      <Select defaultValue="en">
+                      <Label>{t('common.language', 'Language')}</Label>
+                      <Select value={i18n.language} onValueChange={(value) => i18n.changeLanguage(value)}>
                         <SelectTrigger className="w-[200px]">
                           <SelectValue />
                         </SelectTrigger>

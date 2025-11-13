@@ -70,7 +70,7 @@ def request_password_reset(request):
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
-        # Send email logic here
+        # TODO:Send email logic here
         return Response({'message': 'Password reset email sent'})
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

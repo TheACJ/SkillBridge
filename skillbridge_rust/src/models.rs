@@ -23,6 +23,7 @@ pub struct Mentor {
     pub rating: f64,
     pub hourly_rate: i32,
     pub teaching_style: String,
+    // TODO: Expand
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

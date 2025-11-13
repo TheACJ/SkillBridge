@@ -23,7 +23,7 @@ pub async fn match_mentors(req: web::Json<MatchingRequest>) -> Result<HttpRespon
     let start_time = Instant::now();
     let matcher = MentorMatcher::new();
 
-    // Update request count (in production, use atomic operations)
+    // Update request count (TODO: use atomic operations)
     unsafe {
         REQUEST_COUNT += 1;
     }

@@ -106,13 +106,13 @@ impl MentorMatcher {
     }
 
     fn calculate_location_match(&self, learner_location: &str, mentor_location: &str) -> bool {
-        // Simple string matching - in production, use geocoding and distance calculation
+        // Simple string matching - TODO: we will use geocoding and distance calculation
         learner_location.to_lowercase() == mentor_location.to_lowercase() ||
         self.is_same_region(learner_location, mentor_location)
     }
 
     fn is_same_region(&self, loc1: &str, loc2: &str) -> bool {
-        // Simplified region matching - expand based on your geographic needs
+        // Simplified region matching - TODO: will expand based on our geographic needs
         let regions = [
             ("africa", ["nigeria", "kenya", "south africa", "ghana", "uganda"]),
             ("europe", ["uk", "germany", "france", "spain", "italy"]),
@@ -166,7 +166,7 @@ impl MentorMatcher {
 
     fn calculate_teaching_style_match(&self, learner: &User, mentor: &Mentor) -> f64 {
         // This is a simplified implementation
-        // In production, you'd have learner preferences and mentor teaching styles
+        // TODO: I'd have learner preferences and mentor teaching styles
         match mentor.teaching_style.to_lowercase().as_str() {
             "structured" => {
                 // Structured teaching works well for most learners

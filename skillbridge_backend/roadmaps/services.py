@@ -112,7 +112,7 @@ class RoadmapService:
         if cached_resources:
             return cached_resources
 
-        # Mock resource recommendations (would integrate with external APIs)
+        # Mock resource recommendations TODO: integrate with external APIs)
         resources = [
             {
                 'title': f'Official {domain} Documentation',

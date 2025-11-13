@@ -28,7 +28,7 @@ def generate_roadmap_async(domain, skill_level, time_availability, user_context,
         # Invalidate user cache
         RoadmapService.invalidate_user_cache(user_id)
 
-        # Send notification email (if configured)
+        # Send notification email (TODO: get it configured)
         if settings.EMAIL_BACKEND != 'django.core.mail.backends.console.EmailBackend':
             try:
                 send_mail(

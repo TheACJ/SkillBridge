@@ -166,7 +166,7 @@ def get_shared_roadmap(request, token):
     Access a shared roadmap using token
     """
     try:
-        # Find roadmap by token (would need token field in production)
+        # Find roadmap by token (would need token field in production) TODO
         # For now, this is a placeholder
         return Response({'error': 'Shared roadmap access not fully implemented'},
                        status=status.HTTP_501_NOT_IMPLEMENTED)
@@ -215,7 +215,7 @@ def duplicate_roadmap(request, roadmap_id):
     # Can duplicate own roadmap or public/shared roadmaps
     user = request.user
     if original_roadmap.user != user:
-        # Check if roadmap is shared/public (simplified check)
+        # Check if roadmap is shared/public (simplified check) TODO: enhance
         if not hasattr(original_roadmap, 'is_shared') or not original_roadmap.is_shared:
             return Response({'error': 'Can only duplicate your own or shared roadmaps'},
                            status=status.HTTP_403_FORBIDDEN)

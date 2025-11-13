@@ -16,7 +16,7 @@ def user_post_save(sender, instance, created, **kwargs):
             instance,
             f'New user account created: {instance.email}'
         )
-        # User creation logic can be added here
+        # TODO:User creation logic can be added here
     else:
         AuditLog.log_security_event(
             'USER_UPDATED',
